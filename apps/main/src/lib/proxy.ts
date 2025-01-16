@@ -1,4 +1,5 @@
 import { session } from "electron"
+import { ProxyAgent, setGlobalDispatcher } from "undici"
 
 import { logger } from "../logger"
 import { store } from "./store"
@@ -43,12 +44,12 @@ const normalizeProxyUri = (userProxy: string) => {
 
   try {
     const proxyUrl = new URL(firstInput)
-    if (!URL_SCHEME.has(proxyUrl.protocol) || !proxyUrl.hostname || !proxyUrl.port) {
+    if (!URL_SCHEME.has(proxyUrl.protocol) || !proxyUrl.hostname) {
       return
     }
     // There are multiple ways to specify a proxy in Electron,
     // but for security reasons, we only support simple proxy URLs for now.
-    return `${proxyUrl.protocol}//${proxyUrl.hostname}:${proxyUrl.port}`
+    return `${proxyUrl.protocol}//${proxyUrl.hostname}${proxyUrl.port ? `:${proxyUrl.port}` : ""}`
   } catch {
     return
   }
@@ -77,4 +78,8 @@ export const updateProxy = () => {
     proxyRules,
     proxyBypassRules: BYPASS_RULES,
   })
+  // Currently, Session.setProxy is not working for native fetch, which is used by readability.
+  // So we need to set proxy for native fetch manually, refer to https://stackoverflow.com/a/76503362/14676508
+  const dispatcher = new ProxyAgent({ uri: new URL(proxyUri).toString() })
+  setGlobalDispatcher(dispatcher)
 }
