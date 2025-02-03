@@ -1,4 +1,4 @@
-import { Focusable, useFocusable } from "@follow/components/common/Focusable.js"
+import { Focusable } from "@follow/components/common/Focusable.js"
 import { ActionButton, MotionButtonBase } from "@follow/components/ui/button/index.js"
 import type { HTMLMediaState } from "@follow/hooks"
 import { useRefValue, useVideo } from "@follow/hooks"
@@ -156,7 +156,7 @@ export const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
             [state, controls, src, variant],
           )}
         >
-          {variant === "preview" && <FloatMutedButton />}
+          {variant === "preview" && state.hasAudio && <FloatMutedButton />}
           {isPlayer && <ControlBar />}
         </VideoPlayerContext.Provider>
       </Focusable>
@@ -344,6 +344,7 @@ const VolumeControl = () => {
   return (
     <ActionIcon
       label={<VolumeSlider onVolumeChange={controls.volume} volume={volume} />}
+      enableHoverableContent
       onClick={() => {
         if (muted) {
           controls.unmute()
@@ -390,9 +391,9 @@ const PlayProgressBar = () => {
         setCurrentDragging(true)
       }}
       onValueChange={(value) => {
-        setDragTime(value[0])
+        setDragTime(value[0]!)
         startTransition(() => {
-          controls.seek(value[0])
+          controls.seek(value[0]!)
         })
       }}
       onValueCommit={() => {
@@ -420,33 +421,24 @@ const ActionIcon = ({
   children,
   shortcut,
   label,
+  enableHoverableContent,
 }: {
   className?: string
   onClick?: () => void
   label: React.ReactNode
   children?: React.ReactNode
   shortcut?: string
+  enableHoverableContent?: boolean
 }) => {
-  const isFocusWithIn = useFocusable()
-
-  useHotkeys(
-    shortcut || "",
-    (e) => {
-      e.preventDefault()
-      onClick?.()
-    },
-    {
-      enabled: isFocusWithIn,
-    },
-  )
   return (
     <ActionButton
+      shortcutOnlyFocusWithIn
       tooltipSide="top"
       className={clsx("z-[2] hover:bg-transparent", className)}
       onClick={onClick}
       tooltip={label}
-      disableTriggerShortcut
       shortcut={shortcut}
+      enableHoverableContent={enableHoverableContent}
     >
       {children || <i className={className} />}
     </ActionButton>
